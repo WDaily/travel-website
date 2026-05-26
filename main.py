@@ -4,8 +4,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-app.secret_key = ("secret key")
-#api_key=os.environ.get("SECRET_KEY")
+app.secret_key = api_key=os.environ.get("SECRET_KEY")
 CORS(app, supports_credentials=True)
 
 @app.route('/translate', methods=['POST'])
