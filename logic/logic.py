@@ -1,9 +1,8 @@
-import os
-import json
+from external.agent import searchprompt, answerQuestion, recommendOutput
+#from repository.database import createChat, readChat, readChats, updateChats
 import base64
-from google import genai
-from google.genai import types
-from PIL import Image
+import json
+import uuid
 
 def translate(request_type,image_input):
 
@@ -12,40 +11,46 @@ def translate(request_type,image_input):
 
 		instruction = "You are a professional language traslator, when formating the answer, output the name of the translated text, then one newline, if the translated text is more than 100 words ignore the rest of this text, otherwise output this text 'Description:', then give a summarized background of traslated text"
 
-		result = searchprompt(prompt, instruction, image_input)
-		return result
+		result, chats = searchprompt(prompt, instruction, image_input)
+
+		arranged = arrangeItems(chats)
+
+		#to db
+		#user_session = str(uuid.uuid4())
+		#user_id = createChat(user_session, arranged)
+
+		#user_sessions = [str(user_id) , user_session]
+
+		with open("session.json", "w") as file:
+			json.dump(arranged, file)
+
+		return result #, user_sessions
 
 	else:
 		prompt = "What is the name of the main subject in the image. If subject isn't a landmark then output 'Only physical sites accepted'"
 
 		instruction = "You are a professional Tour Guide, when formating the answer, output the name of the main subject in the image, then one newline, then location of the main subject, then a brief historical background of the main subject. One newline the text 'Similar: ' then another similar item loacated within near to the place"
 
-		result = searchprompt(prompt, instruction, image_input)
-		return result
+		result, chats = searchprompt(prompt, instruction, image_input)
+		
 
+		arranged = arrangeItems(chats)
 
+		#to db
+		#user_session = str(uuid.uuid4())
+		#user_id = createChat(user_session, arranged)
 
-client = genai.Client(api_key=os.environ.get("TRAVEL_WEBSITE"))
+		#user_sessions = [str(user_id) , user_session]
 
-def searchprompt(prompt, instruction, image_input):
+		with open("session.json", "w") as file:
+			json.dump(arranged, file)
+			
+		return result #, user_sessions
 
-	image = Image.open(image_input)
-
-	chat = client.chats.create(
-		model="gemma-4-31b-it",
-		config=types.GenerateContentConfig(
-			system_instruction=instruction,
-			max_output_tokens=1000,
-		)
-	)
-
-	response = chat.send_message([image, prompt])
-
-	chat_history = chat.get_history()
-
+def arrengeItems(items):
 	chats = []
 
-	for item in chat_history:
+	for item in items:
 		if item.role == "user":
 
 			image_bytes = item.parts[0].inline_data.data
@@ -66,15 +71,12 @@ def searchprompt(prompt, instruction, image_input):
 					"text":item.parts[1].text
 				}
 			})
+	return chats
 
-	with open("session.json", "w") as file:
-		json.dump(chats, file)
+def Questionscontrols(prompt): #user_sessions
 
-	return response.text
-
-
-
-def answerQuestion(prompt):
+	#obtain the items from db
+	# session_data = readChat(user_sessions[0])
 
 	with open("session.json", "r") as file:
 		session_data = json.load(file)
@@ -112,18 +114,7 @@ def answerQuestion(prompt):
 				) 
 			)
 
-	chat = client.chats.create(
-		model="gemma-4-31b-it",
-		config=types.GenerateContentConfig(
-			system_instruction="output only the answer and use history to refer in relation to the questions",
-			max_output_tokens=1000,
-		),
-		history=prompt_types
-	)
-
-	response = chat.send_message(prompt)
-
-	chat_history = chat.get_history()
+	response, chat_history = answerQuestion(prompt_types)
 
 	session_data.extend([ 
 				{"role":chat_history[-2].role,
@@ -138,51 +129,54 @@ def answerQuestion(prompt):
 				}
 			])
 
+	#update
+	#updateChats(session_data, user_sessions[0])
+
 	with open("session.json", "w") as file:
 		json.dump(session_data, file, indent=4)
 
-	return response.text
+	return response
 
 class sessionError(Exception):
 	pass
 
-def retrieveChats():
+def retrieveChats(): #user_sessions
+
+	#session_chats = readChats(user_sessions[1])
 
 	with open("session.json", "r") as file:
 		session_chats = json.load(file)
 
 	text = []
-
 	images_list = []
-
 	chats = 0
-
 	chats_list = []
+	last_index = len(session_chats) - 1
 
-	for data in session_chats:
-		if  data["role"] == "user" and "image" in data["parts"]:
-			#text = []
-			#chats = 0
+	for index, data in enumerate(session_chats):
+		if data["role"] == "user" and "image" in data["parts"]:
 
-			text.append({data["role"]:f"{data["parts"]["text"]}"})
-			image_data = {"image_data": f"data:{data["parts"]["image"][1]};base64,{data["parts"]["image"][0]}"}
-			images_list.append(image_data)
+			text.append({data["role"]:f"{data['parts']['text']}"})
+			images_list.append({"image_data": f"data:{data['parts']['image'][1]};base64,{data['parts']['image'][0]}"})
 
 			if len(chats_list) < 1 and chats == 0:
 				chats += 1
 			else:
-
-			#if len(chats_list) > 1 and chats != 0:
-				#chats += 1
 				chats_list.append(chats)
-				chats = 0
-				chats += 1
+				chats = 1
 
 		else:
-			text.append({data["role"]:f"{data["parts"]["text"]}"})
+			text.append({data["role"]:f"{data['parts']['text']}"})
 			chats += 1
 
-			if data == data[-1]:
+			if index == last_index:
 				chats_list.append(chats)
 
 	return images_list, text, chats_list
+
+
+def recommendations(location, area, activity):
+
+	response = recommendOutput(location, area, activity)
+
+	return response

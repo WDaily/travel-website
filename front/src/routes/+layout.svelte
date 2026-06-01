@@ -10,7 +10,7 @@
 
 <header>
 	<h2>Website</h2>
-	<nav><a href="/"> Home</a> | <a href="/chats">Chats</a></nav>
+	<nav><a href="/"> Home</a> | <a href="/chats">Chats</a> | <a href="/recommendations"> Recommendations</a></nav>
 </header>
 
 {@render children()}

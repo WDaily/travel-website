@@ -1,4 +1,5 @@
 <script lang="js">
+    import { onMount } from "svelte";
     let { form } = $props();
 
     let textInput = $state("");
@@ -7,9 +8,25 @@
     let submitBtn = $state(false);
     let sending = $state(false);
 
+    let mobile = $state(false);
+
+    onMount(() =>{
+        const isMobile = /Android|iPhone|webOS|iPad|Blackberry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if(isMobile){
+                mobile = true;
+        }
+    });
+
 
     function fileChange(event){
         const targetImage = event.target.files[0];
+
+        /* if it doesnt work create atemporary url for the image
+        if(event.classList.contains("mobile-camera")){
+            let Image = URL.createObjectURL(targetImage);
+        }
+        */
 
         processImage(targetImage);
     }
@@ -131,7 +148,6 @@
 
         const questionData = {question:chatQuestion};
 
-
         try {
              const response = await fetch("http://127.0.0.1:8080/question" , {
                 method: "POST",
@@ -139,7 +155,6 @@
                 body: JSON.stringify(questionData),
                 credentials:"include"
             });
-
 
             const data = await response.json();
 
@@ -150,9 +165,7 @@
             chatText += data.response;
 
         } catch (error) {
-
             chatText += "Error: " + error.message;
-
          } 
     }
 </script>
@@ -166,6 +179,13 @@
     <h2 class="section-title">Translator or Identifier</h2>
 
     <form onsubmit={imageHandle}>
+
+        {#if mobile}
+            <button onclick={triggerFileInput} type = "button">
+                <label for="mobile-camera">Take photo</label>
+                <input id="mobile-camera" class="file-input" type="file" onchange={fileChange} accept ="image/*" capture="environment" bind:this={fileInput}>
+            </button>
+        {/if}
 
         {#if !previewImage}
             <button
