@@ -1,4 +1,5 @@
-<script lang="js">
+<script>
+    import { PUBLIC_HTTPS } from "$env/static/public";
     import { onMount } from "svelte";
     let { form } = $props();
 
@@ -100,7 +101,7 @@
         chatText.length = 0;
 
         try {
-            const response = await fetch("http://127.0.0.1:8080/translate" , {
+            const response = await fetch(`${PUBLIC_HTTPS}/translate` , {
                 method: "POST",
                 body: formData,
                 credentials: "include"
@@ -159,7 +160,7 @@
         sendingQuestion = true;
 
         try {
-             const response = await fetch("http://127.0.0.1:8080/question" , {
+             const response = await fetch("${PUBLIC_HTTPS}/question" , {
                 method: "POST",
                 headers:{ "Content-Type" : "application/json"},
                 body: JSON.stringify(questionData),

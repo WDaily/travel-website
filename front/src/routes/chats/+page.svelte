@@ -1,5 +1,5 @@
 <script>
-
+    import { PUBLIC_HTTPS } from "$env/static/public";
 	import { onMount } from "svelte";
 
 	let items = $state([]);
@@ -33,7 +33,7 @@
 
 		sending = true;
 		try{
-			const response = await fetch("http://127.0.0.1:8080/chats",{
+			const response = await fetch(`${PUBLIC_HTTPS}/chats`,{
 				credentials:"include"
 			});
 		
@@ -76,7 +76,7 @@
 
 				{#if displayArea.image_data}
 					<div class = "image-area"> 
-						<img src={displayArea.image_data} alt="travel destination image, travel planning inspiration, vacation location preview" class="image-preview" />
+						<img src={displayArea.image_data} alt="travel destination image, travel planning inspiration, vacation location preview" class="image-preview">
 					</div>
 				{/if}
 

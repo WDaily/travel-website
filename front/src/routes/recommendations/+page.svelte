@@ -1,4 +1,5 @@
-<script lang="js">
+<script>
+    import { PUBLIC_HTTPS } from "$env/static/public";
     let { form } = $props();
 	
 	let latitude;
@@ -66,7 +67,7 @@
         const locationData = {location: userLocation, area: radius, activity: spot};
 
         try {
-             const response = await fetch("http://localhost:8080/recommend" , {
+             const response = await fetch("${PUBLIC_HTTPS}/recommend" , {
                 method: "POST",
                 headers:{"Content-Type" : "application/json"},
                 body: JSON.stringify(locationData),
