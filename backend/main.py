@@ -1,13 +1,22 @@
-from logic.logic import translate, QuestionControls, retrieveChats, recommendations
+from logic.logic import translate, QuestionsControls, retrieveChats, recommendations
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+import os
+from hypercorn.middleware import ProxyFixMiddleware
 
 app = Flask(__name__)
 
-app.secret_key = "secret_key"
+app.secret_key = os.environ.get("SECRET_KEY")
 
-#api_key=os.environ.get("SECRET_KEY")
-CORS(app, supports_credentials=True)
+CORS(app, supports_credentials=True) 
+
+app.wsgi_app = ProxyFixMiddleware(app.wsgi_app, mode="legacy", trusted_hops=1)
+
+app.config.update(
+	SESSION_COOKIE_SECURE=True,
+	SESSION_COOKIE_SAMESITE="None",
+	SESSION_COOKIE_PARTITIONED = True
+)
 
 @app.route('/translate', methods=['POST'])
 def translate_text():
@@ -20,11 +29,12 @@ def translate_text():
 	request_type =  request.form.get('type')
 	file = request.files.get('image')
 
+	user_sessions = session.get("user_sessions")
+
 	try:
-		response = translate(request_type, image_file) #returns user_sessions
-
-		#session["user_sessions"] = user_sessions
-
+		response, sessions = translate(request_type, image_file, user_sessions)
+		session["user_sessions"] = sessions
+		session.modified = True
 		return jsonify({"status":"success","response":response}), 200
 
 	except Exception as e:
@@ -39,10 +49,10 @@ def question():
 
 	quest = req.get('question')
 
-	#user_sessions = session.get("user_sessions", [])
+	user_sessions = session.get("user_sessions")
 
 	try:
-		response = QuestionControls(quest) #also send user_sessions
+		response = QuestionsControls(quest, user_sessions)
 		return jsonify({"status":"success", "response": response}), 200
 
 	except Exception as e:
@@ -58,10 +68,11 @@ def reset():
 @app.route("/chats", methods=["GET"])
 def retrieve():
 
-	#user_sessions = session.get("user_sessions", [])
+	user_sessions = session.get("user_sessions")
 
+	print(f"user_sessions: {user_sessions}")
 	try:
-		images_list, text, chats_list = retrieveChats() #also send user_sessions
+		images_list, text, chats_list = retrieveChats(user_sessions)
 		return jsonify({"status":"success", "images":images_list, "chat":text,"amount":chats_list}), 200
 
 	except Exception as e:
@@ -74,9 +85,9 @@ def recommend():
 	if not req:
 		return jsonify({"status":"error", "message":"Missing request"}), 400
 
-	location = req.get('location') #coordinates
-	area = req.get("area") #radius
-	activity = req.get("activity") #eg hotel, parks, concerts, 
+	location = req.get('location')
+	area = req.get("area")
+	activity = req.get("activity") 
 
 	try:
 		text = recommendations(location, area, activity)
@@ -84,6 +95,3 @@ def recommend():
 
 	except Exception as e:
 		return jsonify({"status":"error", "message": str(e)}), 500
-
-if __name__ == "__main__":
-	app.run(debug=True, port=8080)

@@ -1,35 +1,60 @@
-#import uuid
 import os
 import sqlite3
 import threading
 import queue
 from contextlib import contextmanager
+import stat
 
 
 class Connections:
 
 	def __init__(self, max_connections:int = 5, timeout: float = 5.0):
+
 		self.max_connections = max_connections
 		self.timeout = timeout
-
-		self._connections = queue.Queue = queue.Queue(maxsize=max_connections)
-
-
+		self._connections: queue.Queue = queue.Queue(maxsize=max_connections)
 		self._connections_active = 0
-
 		self.lock = threading.Lock()
-
 		self.start_connections()
 
 	def start_connections(self) -> None:
 
 		for _ in range(self.max_connections):
-			conn = create()
+			conn = self.create()
 			self._connections.put(conn)
 
 	def create(self) -> sqlite3.Connection:
+		db = os.path.join(os.getcwd(), "external","repository","database","chats.db")
 
-		conn = connection()
+		database_dir = os.path.dirname(db)
+
+		if not os.path.exists(database_dir):
+			os.makedirs(database_dir, mode=0o700)
+
+		conn = sqlite3.connect(
+			db,
+			timeout=5.0,
+			check_same_thread=False,
+			isolation_level=None
+		)
+
+		conn.row_factory = sqlite3.Row
+
+		settings = [
+			"PRAGMA journal_mode = WAL",
+			"PRAGMA synchronous = NORMAL",
+			"PRAGMA busy_timeout = 5000",
+		]
+
+		for setting in settings:
+			conn.execute(setting)
+
+		os.chmod(database_dir, stat.S_IRWXU)
+		os.chmod(db, stat.S_IRUSR | stat.S_IWUSR)
+
+		file_stat = os.stat(db)
+		if file_stat.st_mode & 0o077:
+			TimeoutError("Error: Database is not secured")
 
 		with self.lock:
 			self._connections_active += 1
@@ -40,6 +65,7 @@ class Connections:
 		try:
 			conn.execute("SELECT 1")
 			return True
+
 		except sqlite3.Error:
 			return False
 
@@ -47,23 +73,26 @@ class Connections:
 		try:
 			conn = self._connections.get(timeout=self.timeout)
 
-			if not self.check_connection(conn)
-				conn.Close()
+			if not self.check_connection(conn):
+				conn.close()
 				conn = self.create()
 			return conn 
+
 		except queue.Empty:
-			raise Error("could not get connection within the given time.")
+			raise TimeoutError("could not get connection within the given time.")
 
 	def put_connection(self, conn: sqlite3.Connection) -> None:
 		try:
-			conn.rollback()
-			self._connections.put_nowait(conn)
+			if conn is not None:
+				conn.rollback()
+				self._connections.put_nowait(conn)
+
 		except queue.Full:
 			conn.Close()
 
 	@contextmanager
-	def aquire_connection(self):
-		conn = get_connection()
+	def acquire_connection(self):
+		conn = self.get_connection()
 
 		try:
 			yield conn
@@ -74,8 +103,8 @@ class Connections:
 
 		while not self._connections.empty():
 			try:
-				conn = self._connection.get_nowait()
-				conn.Close()
+				conn = self._connections.get_nowait()
+				conn.close()
 
 			except queue.Empty:
 				break
@@ -90,12 +119,18 @@ class Connections:
 
 
 def connection():
+	db = os.path.join(os.getcwd(), "external","repository","database","chats.db")
 
-	db = os.path.join(os.getcwd(), "chats.db")
+	database_dir = os.path.dirname(db)
+
+	if not os.path.exists(database_dir):
+		os.makedirs(database_dir, mode=0o700)
 
 	conn = sqlite3.connect(
 		db,
-		check_same_thread=False
+		timeout=5.0,
+		check_same_thread=False,
+		isolation_level=None
 		)
 
 	conn.row_factory = sqlite3.Row
@@ -109,13 +144,11 @@ def connection():
 	for setting in settings:
 		conn.execute(setting)
 
+	os.chmod(database_dir, stat.S_IRWXU)
+	os.chmod(db, stat.S_IRUSR | stat.S_IWUSR)
 
-	result = conn.execute("PRAGMA journal_mode").fetchone()[0]
-
-	#print(f"result: {result}")
+	file_stat = os.stat(db)
+	if file_stat.st_mode & 0o077:
+		Error("Error: Database is not secured")
 
 	return conn
-
-	#chats = "{'user': 'Is database working?'}"
-	#user = str(uuid.uuid4())
-	#print(createChat(conn, user, chats))

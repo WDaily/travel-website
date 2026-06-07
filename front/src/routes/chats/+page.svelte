@@ -2,30 +2,31 @@
 
 	import { onMount } from "svelte";
 
-	let items = $state("");
-
+	let items = $state([]);
 	let responseText = $state("");
 	let sending = $state(false);
-
-	let images = $state("");
-	let amount = $state("");
+	let images = $state([]);
+	let amount = $state([]);
 
 	const results = $derived.by(() => {
-		let chunks = [];
-		let itemIndex =0;
-		let i = 0;
+		let displayAreas = [];
+		let itemIndex = 0;
 
-		for(let count of amount){
-			let chunk = types.slice(itemIndex, itemIndex + count);
+		for (var i = 0; i < amount.length; i++) {
+			let displayArea = {
+				image_data: images[i]["image_data"],
+				chats: []
+			};
 
-			chunks.push(images[i],chunk);
+			for (var r = 0; r < amount[i]; r++) {
+				displayArea.chats.push(items[itemIndex + r]);
+			}
 
-			itemIndex += count;
-
-			i += 1;
+			itemIndex += amount[i];
+			displayAreas.push(displayArea);
 		}
 
-		return chunks;
+		return displayAreas;
 	});
 
 	onMount(async () => {
@@ -42,184 +43,73 @@
 				throw new Error(`Error:${data.message}`);
 			}
 
-			items = data.chats;
+			items = data.chat;
+			images = data.images;
+			amount = data.amount;
 		
 		} catch(error){
 			responseText="Previous chats unavailable or an error occurred.";
-		} finally{
+		}finally{
 			sending = false;
 		}
 	});
+	
 </script>
 
-
+<div class="page-header">
+				<h1>Previous Chats</h1>
+				<p class="tagline">Your previous chat history.</p>
+			</div>
 {#if !responseText}
-	{#each results as result}
 
 		<div class="chats-section">
+
+
+			{#if sending}
+				<div class="loader-container">
+					<div class="loader"></div>
+				</div>
+			{/if}
+
+			{#each results as displayArea}
 			<div class = "display-area">
 
-				{#if sending}
-					<div class="loader-container">
-						<div class="loader"></div>
-					</div>
-				{:else}
-					<div></div>
-				{/if}
-
-
-
-				{#if result["image_data"]}
+				{#if displayArea.image_data}
 					<div class = "image-area"> 
-						<img src={result["image_data"]} alt="upload preview" class="image-preview" />
+						<img src={displayArea.image_data} alt="travel destination image, travel planning inspiration, vacation location preview" class="image-preview" />
 					</div>
 				{/if}
 
 				<div class = "chats-area">
-				
-					{#if result["model"]}
-						<div class = "chats {"model"}">
-							{result["model"]}
-							<span class ="type"></span>
-							<p class = "chat-text"></p>
-						</div>
-					{/if}
+					<span class="chat-section-label">Travel Planning Discussion</span>
+					{#each displayArea.chats as chat}
+						{#if chat["model"]}
+							<div class = "chats model">
+								<span class="chat-role">Response</span>
+								{chat["model"]}
+								<span class ="type"></span>
+								<p class = "chat-text"></p>
+							</div>
+						{/if}
 
-					{#if result["user"]}
-						<div class = "chats {"user"}">
-							{text["user"]}
-							<span class ="type"></span>
-							<p class = "chat-text"></p>
-						</div>
-					{/if}
+						{#if chat["user"]}
+							<div class = "chats user">
+								<span class="chat-role">Your Query</span>
+								{chat["user"]}
+								<span class ="type"></span>
+								<p class = "chat-text"></p>
+							</div>
+						{/if}
+					{/each}
 				</div>
 			</div>
+			{/each}
 		</div>
-	{/each}
+	
 {:else}
 	<div class = "chats-section">
-	 	<div class = "desplay-area">
+	 	<div class = "display-area">
 			<div class="response-text"><p>{responseText}</p></div>
 		</div>
 	</div>
 {/if}
-
-<style>
-	:root{
-		--cart-bg:ivory;
-		--text-main: #1f2937;
-  		--bot-bubble: #f3f4f5;
-  		--user-bubble: #5375f1;
-  		--user-text: ivory;
-	}
-
-	.display-area {
- 		width: 100%;
-  		max-width: 450px;
-  		height: 90vh;
-  		background: var(--card-bg);
-  		border-radius: 24px;
-  		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  		display: flex;
-  		flex-direction: column;
-  		overflow: hidden;
-	}
-	* {
-  		box-sizing: border-box;
- 		margin: 0;
-  		padding: 0;
-	}
-
-	.image-preview {
-  		width: 100%;
-  		height: auto;
-  		position: relative;
-	}
-	* {
-  		box-sizing: border-box;
-  		margin: 0;
-  		padding: 0;
-	}
-
-	.chats-area {
-  		flex: 1;
-  		overflow-y: scroll;
-  		padding: 20px;
-  		display: flex;
-  		flex-direction: column;
-  		gap: 15px;
-  		background-color: ivory;
-	}
-	* {
-  		box-sizing: border-box;
-  		margin: 0;
-	}
-
-	.image-area{
-		display:grid;
-		place-content:center;
-	}
-/*
-	.image-area{
-        position: relative;
-        width: 100%;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-    }*/
-
-    .image-preview{
-        width: auto;
-        height: auto;
-        max-height: 350px;
-        object-fit: contain;
-        display: block;
-        background: #001;
-    }
-
-	.chats {
-  		max-width: 80%;
-  		padding: 12px 16px;
-  		border-radius: 18px;
-    	border-bottom-left-radius: 18px;
-  		font-size: 0.95rem;
- 		line-height: 1.4;
-	}
-	* {
-  		box-sizing: border-box;
-  		margin: 0;
-  		padding: 0;
-	}
-
-	.model {
-  		align-self: flex-start;
-  		background-color: var(--bot-bubble);
-  		color: var(--text-main);
-  		border-bottom-left-radius: 4px;
-	}
-
-	.user {
-  		align-self: flex-end;
-  		background-color: var(--user-bubble);
-  		color: var(--user-text);
-  		border-bottom-right-radius: 4px;
-	}
-
-	.chats-section{
-		display: grid;
-		place-content: center;
-	}
-
-	.response-text{
-		display: grid;
-		place-content: center;
-		height:500px;
-	}
-
-	@media (max-width: 480px) {
-  		.display-area {
-    		height: 100vh;
-    		border-radius: 0;
-  		}
-  	}
-</style>

@@ -1,5 +1,7 @@
 .venv
+.env
 __pycache__
 images
 index.html
 session.json
+README.md
