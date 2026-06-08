@@ -12,11 +12,11 @@ CORS(app, supports_credentials=True)
 
 app.wsgi_app = ProxyFixMiddleware(app.wsgi_app, mode="legacy", trusted_hops=1)
 
-app.config.update(
-	SESSION_COOKIE_SECURE=True,
-	SESSION_COOKIE_SAMESITE="None",
-	SESSION_COOKIE_PARTITIONED = True
-)
+#app.config.update(
+	app.config["SESSION_COOKIE_SECURE"] = True
+	app.config["SESSION_COOKIE_SAMESITE"] = "None"
+	app.config["SESSION_COOKIE_PARTITIONED"] = True
+
 
 @app.route('/translate', methods=['POST'])
 def translate_text():
@@ -34,7 +34,7 @@ def translate_text():
 	try:
 		response, sessions = translate(request_type, image_file, user_sessions)
 		session["user_sessions"] = sessions
-		session.modified = True
+		#session.modified = True
 		return jsonify({"status":"success","response":response}), 200
 
 	except Exception as e:
@@ -49,8 +49,8 @@ def question():
 
 	quest = req.get('question')
 
-	user_sessions = session.get("user_sessions")
-
+	user_sessions = session.get("user_sessions", [])
+	
 	try:
 		response = QuestionsControls(quest, user_sessions)
 		return jsonify({"status":"success", "response": response}), 200
@@ -68,9 +68,7 @@ def reset():
 @app.route("/chats", methods=["GET"])
 def retrieve():
 
-	user_sessions = session.get("user_sessions")
-
-	print(f"user_sessions: {user_sessions}")
+	user_sessions = session.get("user_sessions", [])
 	try:
 		images_list, text, chats_list = retrieveChats(user_sessions)
 		return jsonify({"status":"success", "images":images_list, "chat":text,"amount":chats_list}), 200

@@ -102,7 +102,6 @@ class sessionError(Exception):
 	pass
 
 def retrieveChats(user_sessions):
-	print(f"sessions: {user_sessions[0]}")
 	session_chats = readChats(user_sessions[0])
 
 	text = []

@@ -1,5 +1,5 @@
 <script>
-    import { PUBLIC_HTTPS } from "$env/static/public";
+    import { env } from "$env/dynamic/public";
     let { form } = $props();
 	
 	let latitude;
@@ -13,6 +13,9 @@
 	let chooseOption = $state(false);
 	let isLoading = $state(false);
 	let requested = $state(false);
+
+
+    const routerhttp = env.PUBLIC_HTTPS;
 
 	function optionPicked(){
 		chooseOption = !chooseOption;
@@ -67,7 +70,9 @@
         const locationData = {location: userLocation, area: radius, activity: spot};
 
         try {
-             const response = await fetch("${PUBLIC_HTTPS}/recommend" , {
+            const recommendRoute = new URL('/recommend', routerhttp).href;
+
+             const response = await fetch(recommendRoute , {
                 method: "POST",
                 headers:{"Content-Type" : "application/json"},
                 body: JSON.stringify(locationData),

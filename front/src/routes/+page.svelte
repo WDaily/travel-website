@@ -1,5 +1,5 @@
 <script>
-    import { PUBLIC_HTTPS } from "$env/static/public";
+    import { env } from "$env/dynamic/public";
     import { onMount } from "svelte";
     let { form } = $props();
 
@@ -12,6 +12,7 @@
 
     let mobile = $state(false);
 
+    const routerhttp = env.PUBLIC_HTTPS;
     onMount(() =>{
         const isMobile = /Android|iPhone|webOS|iPad|Blackberry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -101,7 +102,10 @@
         chatText.length = 0;
 
         try {
-            const response = await fetch(`${PUBLIC_HTTPS}/translate` , {
+
+            const translateRoute = new URL('/translate', routerhttp).href;
+
+            const response = await fetch(translateRoute , {
                 method: "POST",
                 body: formData,
                 credentials: "include"
@@ -160,7 +164,9 @@
         sendingQuestion = true;
 
         try {
-             const response = await fetch("${PUBLIC_HTTPS}/question" , {
+            const questionRoute = new URL('/question', routerhttp).href;
+
+             const response = await fetch(questionRoute , {
                 method: "POST",
                 headers:{ "Content-Type" : "application/json"},
                 body: JSON.stringify(questionData),

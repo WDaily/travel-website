@@ -1,5 +1,5 @@
 <script>
-    import { PUBLIC_HTTPS } from "$env/static/public";
+    import { env } from "$env/dynamic/public";
 	import { onMount } from "svelte";
 
 	let items = $state([]);
@@ -7,6 +7,8 @@
 	let sending = $state(false);
 	let images = $state([]);
 	let amount = $state([]);
+
+    const routerhttp = env.PUBLIC_HTTPS;
 
 	const results = $derived.by(() => {
 		let displayAreas = [];
@@ -33,7 +35,9 @@
 
 		sending = true;
 		try{
-			const response = await fetch(`${PUBLIC_HTTPS}/chats`,{
+            const chatsRoute = new URL('/chats', routerhttp).href;
+
+			const response = await fetch(chatsRoute ,{
 				credentials:"include"
 			});
 		
