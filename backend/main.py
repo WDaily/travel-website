@@ -12,10 +12,9 @@ CORS(app, supports_credentials=True)
 
 app.wsgi_app = ProxyFixMiddleware(app.wsgi_app, mode="legacy", trusted_hops=1)
 
-#app.config.update(
-	app.config["SESSION_COOKIE_SECURE"] = True
-	app.config["SESSION_COOKIE_SAMESITE"] = "None"
-	app.config["SESSION_COOKIE_PARTITIONED"] = True
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_PARTITIONED"] = True
 
 
 @app.route('/translate', methods=['POST'])
@@ -34,7 +33,6 @@ def translate_text():
 	try:
 		response, sessions = translate(request_type, image_file, user_sessions)
 		session["user_sessions"] = sessions
-		#session.modified = True
 		return jsonify({"status":"success","response":response}), 200
 
 	except Exception as e:
