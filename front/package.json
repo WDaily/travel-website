@@ -4,9 +4,9 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "bun --bun dev",
-		"build": "bun --run build",
-		"preview": "bun run build && bun ./build/index.js",
+		"dev": "bun --bun run dev",
+		"build": "bun run build",
+		"preview": "bun run preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
