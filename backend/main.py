@@ -90,5 +90,5 @@ def recommend():
 		return jsonify({"status":"error", "message": str(e)}), 500
 
 
-asig_app = WsgiToAsgi(app)
+asgi_app = WsgiToAsgi(app)
 application = ProxyFixMiddleware(asgi_app, mode="legacy", trusted_hops=1)
