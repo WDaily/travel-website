@@ -2,6 +2,7 @@ from logic.logic import translate, QuestionsControls, retrieveChats, recommendat
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import os
+from asgiref.wsgi import WsgiToAsgi
 from hypercorn.middleware import ProxyFixMiddleware
 
 app = Flask(__name__)
@@ -9,13 +10,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY")
 
 CORS(app, supports_credentials=True) 
-
-app.wsgi_app = ProxyFixMiddleware(app.wsgi_app, mode="legacy", trusted_hops=1)
-
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "None"
 app.config["SESSION_COOKIE_PARTITIONED"] = True
-
 
 @app.route('/translate', methods=['POST'])
 def translate_text():
@@ -91,3 +88,7 @@ def recommend():
 
 	except Exception as e:
 		return jsonify({"status":"error", "message": str(e)}), 500
+
+
+asig_app = WsgiToAsgi(app)
+application = ProxyFixMiddleware(asgi_app, mode="legacy", trusted_hops=1)
