@@ -3,3 +3,4 @@ flask_cors
 google-genai
 Pillow
 hypercorn
+asgiref
